@@ -1,0 +1,828 @@
+@import "https://fonts.googleapis.com/css?family=Open+Sans:300,400";
+
+html,body {
+	padding : 0;
+	margin : 0;
+	width : 100%;
+	height : 100%;
+	background-color : #dddddd;
+	overflow : hidden;
+	font-family : "Open Sans", sans-serif;
+	font-size : 2.2vmin;
+}
+
+.game-main {
+	width : 100%;
+	height : 100%;
+}
+
+.fps {
+	position : absolute;
+	bottom : 0;
+	left : 5vmin;
+	font : 20pt Verdana;
+	color : red;
+	min-width : 800px;
+	pointer-events : none;
+	z-index : 50;
+}
+
+.tabs > .tab {
+	display : flex;
+	position : absolute;
+	width : 100%;
+	height : 100%;
+	padding : 0;
+	margin : 0;
+}
+
+.tabs > .tab.hidden {
+	display : none;
+}
+
+.dialogs > .tab {
+	display : flex;
+	position : absolute;
+	background-color : rgba(48,48,48,0.95);
+	color : white;
+	left : calc(50% - 48.6vmin);
+	right : calc(50% - 48.6vmin);
+	top : calc(50% - 45vmin);
+	bottom : calc(50% - 45vmin);
+	
+	flex-direction : column;
+	justify-content : space-between;
+	z-index : 20;
+	padding : 0.375vmin;
+}
+
+.dialogs > .tab.hidden {
+	display : none;
+}
+
+.dialog-title-bar {
+	color : gold;
+	font-size : 300%;
+	line-height : 95%;
+}
+
+.dialog-title {
+	text-align : center;
+	margin-bottom : 1.5vmin;
+	position : relative;
+}
+
+.dialog-close {
+	cursor : pointer;
+	position : absolute;
+	right : 1vmin;
+	top : 1vmin;
+	width : 4vmin;
+	height : 4vmin;
+	line-height : 100%;
+	font-size : 50%;
+	padding : 0.5vmin;
+	display : block;
+	text-align : center;
+	background-color : rgba(0,0,0,0.95);
+	transition : background-color 0.2s;
+}
+
+.dialog-close:hover {
+	background-color : rgba(0,0,0,0.6);
+}
+
+.dialogs > .tab .buttons {
+	display : flex;
+	color : white;
+	padding : 2vmin 4vmin;
+	align-self : flex-end;
+	margin-top : auto;
+}
+
+.dialogs > .tab .button {
+	display : inline-block;
+	color : white;
+	padding : 2vmin 4vmin;
+	cursor : pointer;
+	transition : background-color 0.2s;
+	background-color : rgba(0,0,0,0.6);
+	align-self : flex-end;
+	margin : auto 2vmin 0 2vmin;
+}
+
+.dialogs > .tab .button:hover {
+	background-color : rgba(0,0,0,0.2);
+}
+
+.import-area {
+	width : 90vmin;
+	height : 65vmin;
+	margin-top : 2.5vmin;
+	align-self : center;
+	background-color : #111111;
+	color : #777777;
+}
+
+.game-menu {
+	background-color : rgba(0,0,0,0.9);
+	z-index : 30;
+	position : absolute;
+	transition : opacity 0.4s, transform 0.4s;
+	flex-direction : column;
+	transform-origin : bottom right;
+	opacity : 0;
+	transform : scale(0,0);
+	pointer-events : none;
+}
+
+.game-menu.hidden, .game-menu.hidden:hover  {
+	opacity : 0;
+	transform : scale(0,0);
+	pointer-events : none;
+}
+
+.game-menu-button {
+	width : 7.5vmin;
+	height : 7.5vmin;
+	display : flex;
+	align-items : center;
+	justify-content : center;
+	font-size : 150%;
+	background-color : rgba(0,0,0,0.1);
+	position : absolute;
+	right : 0;
+	bottom : 0;	
+	z-index : 10;
+}
+
+.game-menu-item.nest:hover .game-menu, .game-menu-button:hover + .game-menu, .game-menu:hover {
+	opacity : 1;
+	transform : scale(1,1);
+	pointer-events : auto;
+}
+
+.game-menu-item {
+	position : relative;
+	padding : 3vmin 6vmin 3vmin 3vmin;
+	color : white;
+	cursor : pointer;
+}
+
+.game-menu-item:hover {
+	background-color : rgba(255,200,123,0.2);
+}
+
+.game-menu-item.nest {
+	cursor : default;
+}
+
+.game-menu-item-name.nest::before {
+	content : "◄ ";
+	margin-left : -2.5vmin;
+}
+
+.game-menu-item-info {
+	white-space : nowrap;
+	padding-left : 2vmin;
+	font-size : 90%;
+	opacity : 0.8;
+	font-style : italic;
+}
+
+.chambers {
+	width : 100%;
+	height : 100%;
+	left : 0;
+	top : 0;
+	isolation : isolate;
+	position : absolute;
+}
+
+.chamber {
+	border-radius : 50%;
+	width : 45vmin;
+	height : 45vmin;
+	position : absolute;
+	color : white;
+	mix-blend-mode: lighten;
+	display:flex;
+	justify-content:center;
+	align-items:center;
+	flex-direction : column;
+	transform : translate(-50%, -50%);
+	cursor : pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	transition : opacity 0.1s, transform 0.1s;
+	-webkit-tap-highlight-color: rgba(0,0,0,0);
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+}
+
+.chamber.disabled {
+	transform : translate(-50%, -50%) scale(0.8,0.8);	
+	opacity : 0.5;
+	cursor : default;
+}
+
+.chamber.red {
+	background-color : #BB0000;
+	background : radial-gradient(circle closest-side at 50% 50%, #BB0000 0%, #BB0000 50%, #990000 100%);
+}
+
+.chamber.green {
+	background-color : #008800;
+	background : radial-gradient(circle closest-side at 50% 50%, #008800 0%, #008800 50%, #006600 100%);
+}
+
+.chamber.blue {
+	background-color : #0000DD;
+	background : radial-gradient(circle closest-side at 50% 50%, #0000DD 0%, #0000DD 50%, #000088 100%);
+}
+
+.chamber > .value {
+	font : 300% Verdana;
+	padding : 0 0 0.2vmin;
+}
+
+.chamber .stats {
+	display : flex;
+	flex-direction : column;
+	align-items : center;
+	justify-content : center;
+	position : absolute;
+	padding : 0 6vmin;
+	text-align : center;
+	height : 0vmin;
+	overflow : hidden;
+	opacity : 0;
+	transition : height 0.5s, opacity 0.5s;
+}
+
+.chamber:hover .stats {
+	height : 36vmin;
+	opacity : 1;
+}
+
+.chamber .stats .display {
+	white-space : nowrap;
+	order : 2;
+}
+
+.chamber .stats .holder {
+	display : flex;
+	flex-direction : column;
+	height : 14vmin;
+}
+
+.chamber .stats .holder.top {
+	order : 0;
+	flex-direction : column-reverse;
+}
+
+.chamber .stats .holder.center {
+	order : 1;
+	height : 8vmin;
+}
+
+.chamber .stats .holder.bottom {
+	order : 2;
+}
+
+.chamber .stats .name {
+	opacity : 0.8;
+	display : inline-block;
+	padding-right : 1.125vmin;
+}
+
+.chamber .stats .value {
+	display : inline-block;
+}
+
+.generator .resources {
+	position : absolute;
+	top : 3vmin;
+	background-color : rgba(0,0,0,0.9);
+	padding : 1.5vmin;
+	min-width : 33vmin;
+	z-index : 1;
+	transition : opacity 0.5s, top 0.5s;
+}
+
+.generator .resources.left {
+	left : 3vmin;
+}
+
+.generator .resources.right {
+	right : 3vmin;
+}
+
+.generator .resources.moved {
+	top : 10.5vmin;
+}
+
+.generator .resources .display {
+	white-space : nowrap;
+	color : white;
+}
+
+.generator .resources .display .name {
+	display : inline-block;
+	padding-right : 1.5vmin;
+	color : #DDDDDD
+}
+
+.generator .resources .display .name::after {
+	content : ":";
+}
+
+.generator .resources .display .value {
+	display : inline-block;
+}
+
+.generator .resources .display .change {
+	display : inline-block;
+	font-size : 85%;
+	padding-left : 1.5vmin;
+	opacity : 0;
+	transition : opacity 0.1s, color 0.3s;
+}
+
+.generator .resources .display .change.positive {
+	color : #55FF55;
+	opacity : 0.8;
+}
+
+.generator .resources .display .change.negative {
+	color : #FF5555;
+	opacity : 0.8;
+}
+
+.generator .tab-button {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select : none;
+	display : block;
+	position : absolute;
+	top : 3vmin;
+	opacity : 1;
+	padding : 1.5vmin;
+	background-color : rgba(0,0,0,0.9);
+	color : #EEEEEE;
+	cursor : pointer;
+	text-align : center;
+	width : 14.25vmin;	
+	z-index : 1;
+	transition : all 0.3s, top 0.5s;
+	-webkit-tap-highlight-color: rgba(0,0,0,0);
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+}
+
+.generator .tab-button:hover {
+	background-color : rgba(0,0,0,0.6);
+}
+
+.generator .tab-button.active {
+	background-color : white;
+	color : black;
+}
+
+.generator .tab-button.hidden {
+	display : block;
+	opacity : 0;
+	top : -7.5vmin;
+	pointer-events : none;
+	transition : none;
+}
+
+.generator .tab-button.generatorUpgrades {
+	left : 3vmin;
+}
+
+.generator .tab-button.generatorInteractions {
+	right : 3vmin;
+}
+
+.generator .tab-button.generatorInfluences {
+	right : 21.75vmin;
+}
+
+.generator .tab-button.plan {
+	left : 21.75vmin;
+}
+
+.generator .tab-button.updated {
+	background : rgba(0,0,0,0.9) linear-gradient(to bottom, rgba(0,255,255,0.4), rgba(0,255,255,0.4) 15%, transparent 15%, transparent 85%, rgba(0,255,255,0.4) 85%, rgba(0,255,255,0.4));
+}
+
+.generator .tab-button.new  {
+	background : rgba(0,0,0,0.9) linear-gradient(to bottom, rgba(255,255,0,0.4), rgba(255,255,0,0.4) 15%, transparent 15%, transparent 85%, rgba(255,255,0,0.4) 85%, rgba(255,255,0,0.4));
+}
+
+.particle-system {
+	position : absolute;
+	left : 0;
+	top : 0;
+	width : 100%;
+	height : 100%;
+	pointer-events : none;
+}
+
+.particle {
+	position : absolute;
+	border-radius : 50%;	
+	left : 50%;
+	top : 50%;
+	width : 4.5vmin;
+	height : 4.5vmin;
+	transform : translate(-50%,-50%);
+	color : rgba(255,255,255,0.8);
+	text-align : center;
+	display:block;
+}
+
+.notifications {
+	position : absolute;
+	left : 0;
+	bottom : 0;
+	display : flex;
+	flex-direction : column;
+	z-index : 1;
+}
+
+@keyframes flash {
+	0% {
+		background-color : black;
+	}
+	40% {
+		background-color : black;
+	}
+	50% {
+		background-color : gold;
+	}
+	60% {
+		background-color : black;
+	}
+	100% {
+		background-color : black;
+	}
+}
+
+.notification {
+	display : flex;
+	flex-direction : column;
+	align-items : center;
+	width : 3vmin;
+	max-height : 3vmin;
+	margin : 0 0 1vmin 1vmin;
+	transition : color 0.5s, width 0.5s, max-height 1.5s;
+	overflow : hidden;
+	background-color : black;
+	color : transparent;
+	opacity : 0.8;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select : none;
+	cursor : default;
+	animation : flash 2s infinite;
+	animation-delay: 5s
+}
+
+.notification:hover {
+	width : 65vmin;
+	max-height : 50vmin;
+	color : white;
+	animation : inherited;
+}
+
+.notification .letter {
+	font-weight : bold;
+	text-align : center;
+	color : white;
+	height : 3vmin;
+	opacity : 1;
+	transition : height 0.5s, opacity 0.5s;
+	position : absolute;
+}
+
+.notification:hover .letter {
+	height : 0;
+	opacity : 0;
+}
+
+.notification .header {
+	font-size : 150%;
+	font-weight : bold;
+	padding : 1vmin;
+	text-align : center;
+	width : 49vmin;
+}
+
+.notification .text {
+	display : flex;
+	flex-grow : 999;
+	padding-top : 1vmin;
+	text-align : center;
+	align-items : center;
+	justify-content : center;
+	width : 49vmin;
+	padding-bottom : 1vmin;
+}
+
+.store {
+	display : flex;
+	flex-wrap : wrap;
+	align-items : center;
+	align-content : flex-start;
+	margin : 0 0 auto 0;
+}
+
+.store.bought {
+	margin : auto 0 0 0;
+	flex-direction : row-reverse;
+	flex-wrap : wrap-reverse;
+	justify-content : flex-start;
+	align-items : flex-start;
+	align-content : flex-start;
+}
+
+.store .display {
+	display : flex;
+	position : relative;
+	width : 31.35vmin;
+	margin : 0.375vmin;
+	background-color : rgba(0,0,0,0.9);
+	color : white;
+	text-align : center;
+	vertical-align: text-top;
+	transition : background-color 0.2s;
+	cursor : pointer;
+	-webkit-tap-highlight-color: rgba(0,0,0,0);
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select : none;
+	order : 1;
+}
+
+.store .display.hidden {
+	display : none;
+}
+
+.store .display.updated, .store .display.updated:hover {
+	background : rgba(0,0,0,0.6) linear-gradient(to bottom, rgba(0,255,255,0.4), rgba(0,255,255,0.4) 15%, transparent 15%, transparent 85%, rgba(0,255,255,0.4) 85%, rgba(0,255,255,0.4));
+}
+
+.store .display.new, .store .display.new:hover {
+	background : rgba(0,0,0,0.6) linear-gradient(to bottom, rgba(255,255,0,0.4), rgba(255,255,0,0.4) 15%, transparent 15%, transparent 85%, rgba(255,255,0,0.4) 85%, rgba(255,255,0,0.4));
+}
+
+.store .display .progress {
+	position : absolute;
+	width : 0;
+	height : 100%;
+	background-color : rgba(255,255,0,0.6);
+}
+
+.store .display .name, .store .display .value {
+	display : inline-block;
+	padding : 1.05vmin;
+}
+
+.store .display .name {
+	flex-grow : 999;
+	pointer-events : none;
+}
+
+.store .display .value {
+	background-color : rgba(255,255,255,0.07);
+	color : #FFFFAA;
+	pointer-events : none;
+}
+
+.store .display .value:empty {
+	display : none;
+}
+.store .display:hover {
+	background-color : rgba(0,0,0,0.8);
+}
+
+.store .display.red:hover   {background-color : rgba(16,0,0,0.8);}
+.store .display.green:hover {background-color : rgba(0,16,0,0.8);}
+.store .display.blue:hover  {background-color : rgba(0,0,16,0.8);}
+
+.store .display.unavailable, .store .display.unavailable:hover {
+	background-color : rgba(160,160,160,0.3);
+	color : #BBBBBB;	
+	cursor : default;
+}
+
+.store.bought .display, .store .display.bought:hover {
+	background-color : rgba(64,64,0,0.7);
+	color : white;
+	cursor : default;
+	order : 1;
+}
+
+.store.bought .display.red   {background-color : rgba(64,0,0,0.7); order : 2;}
+.store.bought .display.green {background-color : rgba(0,64,0,0.7); order : 3;}
+.store.bought .display.blue  {background-color : rgba(0,0,64,0.7); order : 4;}
+
+.tooltip {
+	position : absolute;
+	background-color : rgba(0,0,0,0.9);
+	width : 37.5vmin;
+	color : white;
+	padding : 0.75vmin 0.75vmin 1.5vmin;
+	pointer-events : none;
+	text-align : center;
+	transition : opacity 0.3s;
+	opacity : 1;
+	z-index : 30;
+}
+
+.tooltip > .title {
+	color : #FFFFAA;
+	font : 120% Verdana;
+	padding : 1.5vmin 1.5vmin 0 1.5vmin;
+	white-space : nowrap;
+}
+
+.tooltip .obtained {
+	font-size : 75%;
+	color : #7F7F7F;
+	padding : 0 1.5vmin 1.5vmin 1.5vmin;
+}
+
+.tooltip .description {
+	font-size : 90%;
+}
+
+.tooltip .info {
+	display : flex;
+	align-items : center;
+	justify-content : center;
+	padding-top : 1.5vmin;
+	font-size : 75%;
+}
+
+.tooltip .info + .info {
+	padding-top : 0.35vmin;
+}
+
+.tooltip .info .name::after {
+	content : ":";
+}
+
+.tooltip .info .value {
+	padding-left : 0.5vmin;
+}
+
+.tooltip .section {
+	border-top : 1px solid #FFFFAA;
+	padding : 1.5vmin 0 0 0;
+	margin : 1.5vmin 0 0 0;
+	color : #DDDDDD;
+}
+
+.tooltip .section .title {
+	color : #DDDDDD;
+	padding-bottom : 1.5vmin;
+}
+
+.tooltip .section .display {
+	display : flex;
+	align-items : center;
+	justify-content : center;
+	color : #BBFFBB;
+	font-size : 90%;
+}
+
+.tooltip .section .display .name::after {
+	content : ":";
+}
+
+.tooltip .section .display .value {
+	padding : 0 0.5vmin;
+}
+
+.tooltip .section .display .percent {
+	display : inline-block;
+	font-size : 90%;
+	opacity : 0.9;
+}
+
+.tooltip .section .expensive {
+	color : #FFBBBB;
+}
+
+.tooltip .section .unknown {
+	color : #777777;
+	font-style : italic;
+	font-weight : bolder;
+}
+
+.tooltip .section .unknown .name::after {
+	content : "";
+}
+
+.settings .groups {
+	display : flex;
+}
+
+.settings .groups .tab-button {
+	padding : 0.5vmin 1.5vmin 1.5vmin;
+	margin : 0.5vmin 0 0.5vmin 1.5vmin;
+	background-color : rgba(0,0,0,0.8);
+	transition : background-color 0.3s;
+}
+
+.settings .groups .tab-button.active {
+	background-color : white;
+	color : black;
+}
+
+.settings .tab-holder {
+	flex-grow : 999;
+	display : flex;
+	height : 100%;
+	width : 100%;
+	overflow : hidden;
+	position : relative;
+}
+
+.settings .tab {
+	overflow-y : auto;
+	width : 100%;
+	height : 100%;
+}
+
+.settings .tab::-webkit-scrollbar-track
+{
+	background-color: transparent;
+}
+
+.settings .tab::-webkit-scrollbar
+{
+	width: 1vmin;
+	background-color: transparent;
+}
+
+.settings .tab::-webkit-scrollbar-thumb
+{
+	border-radius: 0.5vmin;
+	height : 3vmin;
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+	background-color: #111111;
+}
+
+.settings .switch {
+	padding : 1.5vmin;
+	margin : 1.5vmin;
+	background-color : rgba(0,0,0,0.4);
+}
+
+.settings .switch .name {
+	color : #FFFFAA;
+	font-size : 120%;
+}
+
+.settings .choices {
+	display : flex;
+	padding : 0.5vmin 0 0 5vmin;
+	flex-direction : row;
+}
+
+.settings .choice {
+	padding : 2vmin 5vmin;
+	margin : 0.5vmin 0 0.5vmin 1.5vmin;
+	background-color : rgba(0,0,0,0.8);
+	transition : background-color 0.3s;
+	cursor : pointer;
+}
+
+.settings .choice.default {
+	background-color : rgba(0,0,0,0.6);
+}
+
+.settings .choice:hover {
+	background-color : rgba(0,0,0,0.4);
+}
+
+.settings .choice.chosen, .settings .choice.chosen:hover {
+	background-color : white;
+	color : black;
+	cursor : default;
+}
+
+.hidden {
+	display : none;
+}

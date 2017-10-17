@@ -1,0 +1,11 @@
+{
+	"short_name": "Generator Idle",
+	"name": "Generator IDle",
+	"icons": [{
+		"src": "icon.png",
+		"type": "image/png",
+		"sizes": "128x128"
+	}],
+	"start_url": "index.html",
+	"display": "standalone"
+}

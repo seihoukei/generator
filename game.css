@@ -852,6 +852,10 @@ html,body {
 	.store .display {
 		height : 11.25vmin;
 	}
+	
+	.tooltip {
+		width : 50vmin;
+	}
 
 	.store .display .name, .store .display .value {
 		display : flex;

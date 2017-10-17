@@ -23,6 +23,7 @@ html,body {
 	font : 20pt Verdana;
 	color : red;
 	min-width : 800px;
+	opacity : 0.2;
 	pointer-events : none;
 	z-index : 50;
 }
@@ -62,7 +63,7 @@ html,body {
 
 .dialog-title-bar {
 	color : gold;
-	font-size : 300%;
+	font-size : 6.6vmin;
 	line-height : 95%;
 }
 
@@ -244,7 +245,7 @@ html,body {
 }
 
 .chamber > .value {
-	font : 300% Verdana;
+	font : 6.6vmin Verdana;
 	padding : 0 0 0.2vmin;
 }
 
@@ -535,10 +536,18 @@ html,body {
 	padding-bottom : 1vmin;
 }
 
+.stores {
+	display : flex;
+	flex-direction : column;
+	height : 100%;
+}
+
 .store {
 	display : flex;
+	flex-shrink : 0;
+	flex-grow : 999;
 	flex-wrap : wrap;
-	align-items : center;
+	align-items : flex-start;
 	align-content : flex-start;
 	margin : 0 0 auto 0;
 }
@@ -593,7 +602,7 @@ html,body {
 }
 
 .store .display .name, .store .display .value {
-	display : inline-block;
+	display : block;
 	padding : 1.05vmin;
 }
 
@@ -825,4 +834,70 @@ html,body {
 
 .hidden {
 	display : none;
+}
+
+@media only screen and (max-width : 480px) {
+	html,body {
+		font-size : 3.2vmin;
+	}
+
+	.generator .resources.moved {
+		top : 11.75vmin;
+	}
+
+	.stores {
+		overflow-y : auto;
+	}
+
+	.store .display {
+		height : 11.25vmin;
+	}
+
+	.store .display .name, .store .display .value {
+		display : flex;
+		align-items : center;
+		justify-content : center;
+	}
+
+	.settings .choice {
+		padding : 2vmin 4vmin;
+	}
+}
+	
+@media only screen and (max-width : 480px) and (orientation: portrait) {
+	.stores {
+		display : block;
+		padding-top : 1vmin;
+		overflow-y : auto;
+		overflow-x : hidden;
+	}
+	
+	.store {
+		flex-direction : column;
+		flex-wrap : nowrap;
+	}
+	
+	.store.bought {
+		margin-top : 5vmin;
+		flex-direction : column-reverse;
+	}
+	
+	.store .display {
+		width : 100%;
+		height : auto;
+		margin-top : 1vmin;
+	}
+	
+	.store .display .name {
+		padding : 1.5vmin 0;
+	}
+	
+	.dialogs > .tab {
+		top : calc(50% - 60vmin);
+		bottom : calc(50% - 60vmin);
+	}
+	
+	.import-area {
+		height : 95vmin;
+	}
 }

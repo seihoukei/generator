@@ -91,7 +91,7 @@ function softCap (x, max) {
 	return max * (1 - Math.exp(-x / max))
 }
 
-function massCap (x, mass, step) {
+function massCap (x, mass, step = game.data.massCapStep.value) {
 	return 1 + (x - 1) / (10 ** (mass/step))
 }
 

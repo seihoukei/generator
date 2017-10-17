@@ -5,6 +5,10 @@ let dev = {
 		let time = performance.now() - dev.start
 		console.log(1000 * dev.dataFrames / time, "data fps")
 		console.log(1000 * dev.frames / time, "video fps")
+	},
+	testCase : () => {
+		game.data.particleAcceleration.set(2)
+		game.data.allUnstability.set(10)
 	}
 }
 

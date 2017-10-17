@@ -2,9 +2,15 @@
 
 let gameData
 
-(() => {
-	// Basic reveal functions
+;(() => {
 	
+	const sequences = {
+		allUnstability : [0, 0.1, 0.5, 1.5, 2.5, 4, 8, 13, 19, 25],
+		_Unstability : [0, 1, 3, 6, 10, 18, 28, 44, 59, 75]
+	}
+	
+	// Basic reveal functions
+
 	function moreThan(value) {
 		return x => x.self.value > value
 	}
@@ -39,13 +45,13 @@ let gameData
 		resources : [{
 			
 		// Global resources
-			class : Resource,
+			class : GlobalResource,
 			name : "offlinium",
 			displayName : "Offlinium",
 			displayString : normal(2,"",1),
 			displayRequirement : moreThan(0),
 		},{
-			class : Resource,
+			class : GlobalResource,
 			name : "generatorOutput",
 			displayName : "Energy output",
 			displayString : normal(2,"W"),
@@ -54,35 +60,34 @@ let gameData
 		},{
 			
 		// Generator Resources
-			class : Resource,
+			class : GeneratorResource,
 			name : "energy",
 			displayName : "Energy",
 			displayString : normal(2,'J'),
 			displayRequirement : moreThan(0),
 			units : "J",
 		},{
-			class : Resource,
+			class : GeneratorResource,
 			name : "light",
 			displayName : "Light",
 			displayString : normal(2,'L'),
 			displayRequirement : moreThan(0),
 			units : "L",
 		},{
-			class : Resource,
-			name : "splits"
+			class : GeneratorResource,
+			name : "splits",
+			displayName : "Manual splits",
 		},{
-			class : Resource,
+			class : GeneratorResource,
 			name : "autoSplits",
+			displayName : "Automatic splits",
 		},{
-			class : Resource,
+			class : GeneratorResource,
 			name : "movePhase",
-		},{
-			class : Resource,
-			name : "moveSpeed",
 		},{
 			
 		// Global stats
-			class : Stat,
+			class : GlobalStat,
 			name : "offliniumPower",
 			displayName : "Offlinium boost",
 			displayString : x => `×${x}`,
@@ -94,24 +99,24 @@ let gameData
 		
 
 		// Generator stats 
-			class : Stat,
+			class : GeneratorStat,
 			name : "massCapStep",
 			dependencies : ["generatorLevel"],
 			valueFunction : x => {
-				return 10 ** (0.5 * (1 + x.generatorLevel.value))
+				return 10 ** (x.generatorLevel.value + 1)
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "particleSpeed",
 			displayName : "Particle speed",
 			displayString : normal(2),
 			displayRequirement : moreThan(1),
 			dependencies : ["particleAcceleration"],
 			valueFunction : x => {
-				return 1.7 ** x.particleAcceleration.value
+				return 2 ** (0.5 * x.particleAcceleration.value)
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "totalMass",
 			displayName : "Total mass",
 			displayString : normal(2),
@@ -121,7 +126,7 @@ let gameData
 				return x.red.fullMass() + x.green.fullMass() + x.blue.fullMass()
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "totalSplits",
 			displayName : "Total splits",
 			displayString : normal(0),
@@ -129,6 +134,26 @@ let gameData
 			dependencies : ["splits","autoSplits"],
 			valueFunction : (x) => {
 				return x.splits.value + x.autoSplits.value
+			}
+		},{
+			class : GeneratorStat,
+			name : "moveSpeed",
+			displayName : "Core speed",
+			displayString : normal(2),
+			displayRequirement : moreThan(0),
+			dependencies : ["coreMovement"],
+			valueFunction : (x) => {
+				return x.coreMovement.value ** 2 * 1e-2
+			}
+		},{
+			class : GeneratorStat,
+			name : "generatorBoost",
+			displayName : "Feedback boost",
+			displayString : x => `×${normal(2)(x)}`,
+			displayRequirement : moreThan(1),
+			dependencies : ["energyFeedback"],
+			valueFunction : (x) => {
+				return 1 + 0.05 * x.energyFeedback.value
 			}
 		},{
 
@@ -155,10 +180,41 @@ let gameData
 			displayRequirements : {
 				generatorOutput : 1e-6,
 			},
-			max : 5
+			max : 4
 		},{
 
 		//Generator Upgrades
+			class : GeneratorUpgrade,
+			name : "allUnstability",
+			displayName : "Unstability",
+			displayHint : "Unstable cores have a low chance to spontaneously emit particles",
+			displayRequirements : {
+				energy : 20e-9
+			},
+			info : {
+				currentBonus : {
+					displayName : "Current stability reduction",
+					valueFunction : (x) => sequences.allUnstability[x.self.value] * 1e-2,
+					displayString : percent(1)
+				},				
+				nextBonus : {
+					displayName : "Next level stability reduction",
+					valueFunction : (x) => sequences.allUnstability[x.self.value+1] * 1e-2,
+					boughtHide : true,
+					displayString : percent(1)
+				}
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				red :   [10, 10, 17, 35, 50, 0],
+				green : [10, 10, 17, 35, 50, 0],
+				blue :  [10, 10, 17, 35, 50, 0],
+			},
+			cost : {
+				energy : [50e-9, 200e-9, 2000e-9, 50e-6, 1100e-6, 0]
+			},
+			max : 9
+		},{
 			class : GeneratorUpgrade,
 			name : "redUnstability",
 			displayName : "Redium unstability",
@@ -166,18 +222,31 @@ let gameData
 			displayRequirements : {
 				allUnstability : 1
 			},
+			info : {
+				currentBonus : {
+					displayName : "Current stability reduction",
+					valueFunction : (x) => sequences._Unstability[x.self.value] * 1e-2,
+					displayString : percent(1)
+				},				
+				nextBonus : {
+					displayName : "Next level stability reduction",
+					valueFunction : (x) => sequences._Unstability[x.self.value + 1] * 1e-2,
+					boughtHide : true,
+					displayString : percent(1)
+				}
+			},
 			requirements : {
-				generatorLevel : [0, 0, 2, 0],
-				green : [0, 5, 25, 50],
-				blue : [0, 5, 25, 50],
-				red : [25, 0, 0, 0]
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				red :   [20, 0, 0, 0, 0, 0],
+				green : [0, 5, 25, 50, 250, 0],
+				blue :  [0, 5, 25, 50, 250, 0],
 			},
 			cost : {
-				red : [0, 5, 25, 100],
-				energy : [75e-9, 750e-9, 2500e-9, 20000e-9]
+				red : [0, 5, 25, 50, 250, 0],
+				energy : [50e-9, 750e-9, 50e-6, 1000e-6, 10e-3, 0]
 			},
 			target : "red",
-			max : 4
+			max : 9
 		},{
 			class : GeneratorUpgrade,
 			name : "greenUnstability",
@@ -186,18 +255,31 @@ let gameData
 			displayRequirements : {
 				allUnstability : 1
 			},
+			info : {
+				currentBonus : {
+					displayName : "Current stability reduction",
+					valueFunction : (x) => sequences._Unstability[x.self.value] * 1e-2,
+					displayString : percent(1)
+				},				
+				nextBonus : {
+					displayName : "Next level stability reduction",
+					valueFunction : (x) => sequences._Unstability[x.self.value + 1] * 1e-2,
+					boughtHide : true,
+					displayString : percent(1)
+				}
+			},
 			requirements : {
-				generatorLevel : [0, 0, 2, 0],
-				red : [0, 5, 35, 200],
-				blue : [0, 5, 35, 200],
-				green : [25, 0, 0, 0]
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				red :   [0, 5, 25, 60, 300, 0],
+				green : [20, 0, 0, 0, 0, 0],
+				blue :  [0, 5, 25, 60, 300, 0],
 			},
 			cost : {
-				green : [0, 5, 35, 400],
-				energy : [125e-9, 1250e-9, 4000e-9, 80000e-9]
+				green : [0, 5, 30, 65, 350, 0],
+				energy : [100e-9, 1250e-9, 100e-6, 1500e-6, 15e-3, 0]
 			},
 			target : "green",
-			max : 4
+			max : 9
 		},{
 			class : GeneratorUpgrade,
 			name : "blueUnstability",
@@ -206,100 +288,286 @@ let gameData
 			displayRequirements : {
 				allUnstability : 1
 			},
-			requirements : {
-				generatorLevel : [0, 0, 2, 0],
-				red : [0, 5, 30, 150],
-				green : [0, 5, 30, 150],
-				blue : [25, 0, 0, 0]
-			},
-			cost : {
-				blue : [0, 5, 30, 300],
-				energy : [100e-9, 1000e-9, 3250e-9, 50000e-9]
-			},
-			target : "blue",
-			max : 4
-		},{
-			class : GeneratorUpgrade,
-			name : "allUnstability",
-			displayName : "Unstability",
-			displayHint : "Unstable cores have a low chance to spontaneously emit particles",
-			displayRequirements : {
-				energy : 50e-9
-			},
 			info : {
 				currentBonus : {
 					displayName : "Current stability reduction",
-					valueFunction : (x) => x.self.value * (x.self.value + 1) * 0.0005,
+					valueFunction : (x) => sequences._Unstability[x.self.value] * 1e-2,
 					displayString : percent(1)
 				},				
 				nextBonus : {
 					displayName : "Next level stability reduction",
-					valueFunction : (x) => (x.self.value + 2) * (x.self.value + 1) * 0.0005,
+					valueFunction : (x) => sequences._Unstability[x.self.value + 1] * 1e-2,
 					boughtHide : true,
 					displayString : percent(1)
 				}
 			},
 			requirements : {
-				generatorLevel : [0,2,0,0,0,2,0,0,0,0],
-				red : { 
-					base : 10,
-					multiplier : 2
-				},
-				green : { 
-					base : 10,
-					multiplier : 2
-				},
-				blue : { 
-					base : 10,
-					multiplier : 2
-				}
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				red :   [0, 5, 25, 55, 280, 0],
+				green : [0, 5, 25, 55, 280, 0],
+				blue :  [20, 0, 0, 0, 0, 0],
 			},
 			cost : {
-				energy : {
-					base : 75e-9,
-					multiplier : 5
-				}
+				blue : [0, 5, 27.5, 60, 300, 0],
+				energy : [75e-9, 1000e-9, 75e-6, 1250e-6, 13e-3, 0]
 			},
-			max : 10
+			target : "blue",
+			max : 9,
 		},{
 			class : GeneratorUpgrade,
 			name : "particleAcceleration",
+			displayName : "Particle acceleration",
+			displayHint : "Particles move faster and produce more energy",
+			displayRequirements: {
+				energy : 50e-9
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [0, 40, 125, 400, 4000, 0],
+			},
+			cost : {
+				energy : [75e-9, 1500e-9, 250e-6, 6e-3, 300e-3, 0],
+				red :   [0, 5, 40, 140, 1500, 0],
+				green : [0, 5, 30, 120, 1200, 0],
+				blue :  [0, 5, 20, 100, 1000, 0],
+			},
+			info : {
+				currentBonus : {
+					displayName : "Current particle speed",
+					valueFunction : (x) => 2 ** (0.5 * x.self.value),
+					displayString : normal(2)
+				},				
+				nextBonus : {
+					displayName : "Next level particle speed",
+					valueFunction : (x) => 2 ** (0.5 * (x.self.value + 1)),
+					boughtHide : true,
+					displayString : normal(2)
+				}
+			},
 		},{
 			class : GeneratorUpgrade,
-			name : "allPower",		
+			name : "allPower",
+			displayName : "Power amplification",
+			displayHint : "Particles provide more energy and mass upon landing",
+			displayRequirements : {
+				energy : 100e-9
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [0, 60, 120, 180, 0]
+			},
+			cost : {
+				energy : [250e-9, 2500e-9, 75e-6, 2250e-6, 25e-3, 0],
+				red :   [5, 15, 30, 50, 250, 0],
+				green : [5, 15, 30, 50, 250, 0],
+				blue :  [5, 15, 30, 50, 250, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "redPower",		
+			displayName : "Redium power",
+			displayHint : "Particles from red core provide more energy and mass upon landing",
+			displayRequirements : {
+				allPower : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				red :  [30, 50, 70, 500, 1500, 0]
+			},
+			cost : {
+				energy : [13e-6, 1400e-6, 15e-3, 160e-3, 1700e-3, 0],
+				green : [60, 115, 170, 700, 1800, 0],
+				blue :  [35, 60, 85, 600, 1600, 0],
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "greenPower",		
+			displayName : "Greenium power",
+			displayHint : "Particles from green core provide more energy and mass upon landing",
+			displayRequirements : {
+				allPower : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				green :  [25, 45, 65, 450, 1350, 0]
+			},
+			cost : { 
+				energy : [12e-6, 1250e-6, 13e-3, 140e-3, 1450e-3, 0],
+				blue : [55, 110, 165, 650, 1750, 0],
+				red :  [30, 55, 80, 550, 1500, 0],
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "bluePower",		
+			displayName : "Bluite power",
+			displayHint : "Particles from blue core provide more energy and mass upon landing",
+			displayRequirements : {
+				allPower : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				blue :  [20, 40, 60, 400, 1200, 0]
+			},
+			cost : {
+				energy : [10e-6, 1000e-6, 10e-3, 100e-3, 1300e-3, 0],
+				red :   [50, 100, 150, 600, 1600, 0],
+				green : [25, 50, 75, 500, 1300, 0],
+			}
 		},{
 			class : GeneratorUpgrade,
-			name : "allAutoSplit",		
+			name : "allAutoSplit",
+			displayName : "Massive emission",
+			displayHint : "Unstable cores emit more mass at once",
+			displayRequirements : {
+				autoSplits : 2500
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [75, 125, 250, 2500, 7500, 0],
+			}, 
+			cost : {
+				energy : [17500e-9, 150e-6, 7000e-6, 80e-3, 900e-3, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "redAutoSplit",		
+			displayName : "Redium emission",
+			displayHint : "Unstable red core emits more mass at once",
+			displayRequirements : {
+				allAutoSplit : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				red : [100, 200, 700, 1600, 4000, 0],
+				totalMass : [200, 400, 2000, 5000, 10000, 0],
+			}, 
+			cost : {
+				energy : [250e-6, 2500e-6, 50e-3, 500e-3, 5, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "greenAutoSplit",		
+			displayName : "Greenium emission",
+			displayHint : "Unstable green core emits more mass at once",
+			displayRequirements : {
+				allAutoSplit : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				green : [150, 250, 1000, 2500, 7000, 0],
+				totalMass : [250, 450, 3000, 8000, 15000, 0],
+			}, 
+			cost : {
+				energy : [500e-6, 5000e-6, 100e-3, 1000e-3, 10, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "blueAutoSplit",		
+			displayName : "Bluite emission",
+			displayHint : "Unstable blue core emits more mass at once",
+			displayRequirements : {
+				allAutoSplit : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				blue : [125, 225, 850, 2000, 5000, 0],
+				totalMass : [225, 425, 1500, 6500, 12500, 0],
+			}, 
+			cost : {
+				energy : [400e-6, 4000e-6, 75e-3, 750e-3, 8, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "allSplit",		
+			displayName : "Massive splits",
+			displayHint : "Manual splits produce bigger particles",
+			displayRequirements : {
+				splits : 100,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [0, 50, 200, 1000, 4000, 0]
+			},
+			cost : {
+				energy : [200e-9, 10e-6, 2e-3, 20e-3, 300e-3, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "redSplit",		
+			displayName : "Redium splits",
+			displayHint : "Red core splits produce bigger particles",
+			displayRequirements : {
+				allSplit : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [50, 200, 500, 1000, 5000, 0]
+			},
+			cost : {
+				energy : [50e-6, 1000e-6, 5e-3, 25e-3, 500e-3, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "greenSplit",		
+			displayName : "Greenium splits",
+			displayHint : "Green core splits produce bigger particles",
+			displayRequirements : {
+				allSplit : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [50, 200, 500, 1000, 5000, 0]
+			},
+			cost : {
+				energy : [75e-6, 1250e-6, 6e-3, 30e-3, 800e-3, 0]
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "blueSplit",		
+			displayName : "Bluite splits",
+			displayHint : "Blue core splits produce bigger particles",
+			displayRequirements : {
+				allSplit : 2,
+			},
+			requirements : {
+				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				totalMass : [50, 200, 500, 1000, 5000, 0]
+			},
+			cost : {
+				energy : [60e-6, 1100e-6, 5.5e-3, 27.5e-3, 650e-3, 0]
+			}
+		},{
+			class : GeneratorUpgrade,
+			name : "energyOutput",
+			displayName : "Energy output",
+			displayHint : "Redirect produced energy to somewhere else",
+			displayRequirements : {
+				energy : 1e-3
+			},
+			cost : {
+				energy : 5e-3,
+				red : 100,
+				green : 100,
+				blue : 100,
+			},
+			action : () => {
+				game.unlock("plan")
+			},
+			max : 1
+		},{
+			class : GeneratorUpgrade,
+			name : "energyFeedback",
+			displayName : "Energy feedback",
+			displayHint : "Improves overall energy production by 5% per level",
+			displayRequirements : {
+				energyOutput : 1
+			},
+			cost : {
+				energy : {
+					base : 100e-3,
+					multiplier : 1.5
+				}
+			}
 		},{
 			class : GeneratorUpgrade,
 			name : "allChain",		
@@ -315,6 +583,10 @@ let gameData
 		},{
 			class : GeneratorUpgrade,
 			name : "allLight",		
+		},{
+			class : GeneratorUpgrade,
+			name : "coreMovement",
+			max : 5
 		},{
 			class : GeneratorUpgrade,
 			name : "basicInteractions",		
@@ -357,7 +629,7 @@ let gameData
 		}],
 		
 		chamberResources : [{			
-			class : Stat,
+			class : GeneratorStat,
 			name : "splitCost",
 			displayName : "Split Cost",
 			displayString : normal(2),
@@ -366,10 +638,15 @@ let gameData
 			value : 0,
 			dependencies : ["allSplit","_Split"],
 			valueFunction : (x) => {
-				return 7 ** (0.5 * (x.allSplit.value + x._Split.value))
+				let result = 1
+				
+				result *= 2 ** (x.allSplit.value)
+				result *= 3 ** (x._Split.value)
+				
+				return result
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "stability",
 			displayName : "Stability",
 			displayString : percent(1),
@@ -377,10 +654,11 @@ let gameData
 			subClass : "top",
 			dependencies : ["allUnstability", "_Unstability", "boostUnstability"],
 			valueFunction : x => {
-				let result = 1
+				let result = 100
 				
-				result -= x.allUnstability.value * (x.allUnstability.value + 1) * 0.0005
-				result -= x._Unstability.value ** 1.5 * 0.01
+				result -= sequences.allUnstability[x.allUnstability.value]
+				result -= sequences._Unstability[x._Unstability.value]
+
 				if (x.boostUnstability.active) {
 					result -= softCap(1.1 ** x.boostUnstability.value, 20) / 100
 				}
@@ -388,10 +666,10 @@ let gameData
 				if (result < 0) 
 					result = 0
 				
-				return result
+				return result * 1e-2
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "autoSplitCost",
 			displayName : "Autosplit amount",
 			displayString : normal(2),
@@ -401,13 +679,13 @@ let gameData
 			valueFunction : x => {
 				let result = 1
 				
-				result *= 5 ** (x.allAutoSplit.value / 2)
+				result *= 2 ** (x.allAutoSplit.value / 2)
 				result *= 5 ** (x._AutoSplit.value / 2)
 				
 				return result
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "splitPower",
 			displayName : "Split power",
 			displayString : normal(2),
@@ -417,13 +695,13 @@ let gameData
 			valueFunction : x => {
 				let result = 1
 				
-				result *= 1.2 ** (x.allPower.value / 2)
-				result *= 1.25 ** (x._Power.value / 2)
+				result *= 1.7 ** (x.allPower.value)
+				result *= 3 ** (x._Power.value)
 				
 				return result
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "chainChance",
 			displayName : "Chain chance",
 			displayString : percent(1),
@@ -433,15 +711,15 @@ let gameData
 			valueFunction : x => {
 				let result = 0
 				
-				result += softCap(x.allChain.value * 0.15, 0.5)
-				result += softCap(x._Chain * 0.25, 0.5)
+				result += softCap(x.allChain.value * 0.15, 1)
+				result += softCap(x._Chain.value * 0.25, 1.5)
 
 				result = softCap(result, 1)
 				
 				return result
 			}
 		},{
-			class : Stat,
+			class : GeneratorStat,
 			name : "photonChance",
 			displayName : "Photon chance",
 			displayString : percent(1),
@@ -461,7 +739,7 @@ let gameData
 			value : 10,
 			x0 : 0,
 			y0 : 7,
-			r : 22.5,
+			radius : 22.5,
 			cos : Math.cos(-Math.PI / 2),
 			sin : Math.sin(-Math.PI / 2),
 			orbitRadius : 33,
@@ -476,7 +754,7 @@ let gameData
 			value : 10,
 			x0 : 0,
 			y0 : 7,
-			r : 22.5,
+			radius : 22.5,
 			cos : Math.cos(Math.PI / 6),
 			sin : Math.sin(Math.PI / 6),
 			orbitRadius : 33,
@@ -491,7 +769,7 @@ let gameData
 			value : 10,
 			x0 : 0,
 			y0 : 7,
-			r : 22.5,
+			radius : 22.5,
 			cos : Math.cos(5 * Math.PI / 6),
 			sin : Math.sin(5 * Math.PI / 6),
 			orbitRadius : 33,

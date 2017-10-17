@@ -302,6 +302,9 @@ class Tooltip {
 		x = x * (width - w) / width
 		y = (y < height / 2 ? y + 5 : y - (h + 5))
 		
+//		x = Math.max(0,Math.min(x, width-w))
+		y = Math.max(0,Math.min(y, height-h))
+		
 		this.dvDisplay.style.left = `${x}px`
 		this.dvDisplay.style.top = `${y}px`
 	}
@@ -718,12 +721,14 @@ class StoreDisplay extends ResourceDisplay {
 				class : MultiCost,
 				className : "section",
 				title : "Requirements",
+				used : false,
 				resources : this.resource.calculatedRequirements			
 			})
 			if (this.resource.calculatedCost && Object.entries(this.resource.calculatedCost).length) tooltipData.push({
 				class : MultiCost,
 				className : "section",
 				title : "Cost",
+				used : true,
 				resources : this.resource.calculatedCost			
 			})
 		}
@@ -873,7 +878,7 @@ class CostDisplay extends ResourceDisplay {
 			return
 		}
 		
-		this.percentText = `(uses ${(100 * this.value / this.resource.value).toFixed(1)}%)`
+		this.percentText = this.used?`(uses ${(100 * this.value / this.resource.value).toFixed(1)}%)`:``
 	}
 	
 	update() {
@@ -904,6 +909,7 @@ class MultiCost {
 			let display = new CostDisplay ({
 				container : this.dvDisplay,
 				resource : resource,
+				used : this.used,
 				styles : [{
 					name : "expensive",
 					func : x => x.self.value < value
@@ -1021,8 +1027,9 @@ class ImportDialog extends Dialog {
 class BuyDialog extends Dialog {
 	constructor (...data) {
 		super(...data)
-		this.dvDisplay.appendChild(this.dvStore = createElement("div", {class : `store`}))
-		this.dvDisplay.appendChild(this.dvBought = createElement("div", {class : `store bought`}))
+		this.dvDisplay.appendChild(this.dvStores = createElement("div", {class : `stores`}))
+		this.dvStores.appendChild(this.dvStore = createElement("div", {class : `store`}))
+		this.dvStores.appendChild(this.dvBought = createElement("div", {class : `store bought`}))
 		
 		this.items = new Set()
 		
@@ -1143,22 +1150,26 @@ class BuyDialog extends Dialog {
 			transform: startTransform,
 			backgroundColor: startColor,
 			pointerEvents : "none",
-			color: "white"
+			color: "white",
+			zIndex : 25,
 		},{
 			transform: tempTransform,
 			backgroundColor: tempColor,
 			pointerEvents : "none",
-			color: "black"
+			color: "black",
+			zIndex : 25,
 		},{
 			transform: tempTransform,
 			backgroundColor: endColor,
 			pointerEvents : "none",
-			color: "white"
+			color: "white",
+			zIndex : 25,
 		},{
 			transform:`translate(0,0) scale(1,1)`,
 			backgroundColor:endColor,
 			pointerEvents : "none",
-			color : "white"
+			color : "white",
+			zIndex : 25,			
 		}], 1000)
 	}
 }
@@ -1420,7 +1431,7 @@ class GeneratorTab extends Tab {
 			right : new MultiDisplay({
 				container : this.dvDisplay,
 				className : "resources right",
-				resourceList : ["generatorLevel","offliniumPower","particleSpeed","totalMass","totalSplits"],
+				resourceList : ["generatorLevel","offliniumPower","generatorBoost","generatorOutput","particleSpeed","totalMass","totalSplits"],
 				game : this.game,
 				showAnimation, elementShowAnimation
 			})

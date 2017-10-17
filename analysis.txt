@@ -1,0 +1,123 @@
+all:
+	Particle Acceleration : ~x1.5
+
+	allPower : ~x1.7
+	Power : ~x3 total
+
+passive :
+	allAutoSplit : ~x1.4
+	autoSplit : ~x2.4 total
+
+active : 
+	allSplit : ~x2
+	Split : ~x3 total
+	
+	
+Level 0 :
+	Unstability
+	Particle Acceleration
+	Power
+	Split
+	AutoSplit
+	Energy Feedback 
+	
+	Early Output 250~500 uJ/S
+	Tops out at ~1.2J/S
+	
+Level 1 : 
+	Basic Interactions
+	Photons`n`Light
+	
+Level 2 :
+	Chaining
+	Basic Influences
+	
+Level 3 :
+	Advanced Interactions
+	Advanced Influences
+	
+Level 4 : 
+	Mobile cores
+	
+	
+Level 0:
+~50-100 x 30
+	Unstability 2
+	Particle Acceleration 1
+	_Unstabilities 1
+	
+~200-500 x 30
+	Power 1
+	Split 1
+
+~1000-2500 x 30-60
+	Unstability 3
+	_Unstabilities 2
+	Particle Acceleration 2
+	Power 2
+	
+~10000-25000 x 50-100
+	_Powers 1
+	AutoSplit 1
+	Split 2
+	
+~50000-100000 x 100-200
+	Unstability 4
+	_Unstabilities 3
+	Power 3
+	AutoSplit 2
+	_Splits 1
+	
+~200000-500000 x 125-250
+	Particle Acceleration 3
+	_AutoSplits 1
+	
+~1000000-1750000 x 150-300
+	reveal Energy Output
+	Unstability 5
+	_Unstabilities 4
+	_Powers 2
+	_Splits 2
+	
+~2000000 x 200-300
+	Split 3
+	Power 4
+	_AutoSplits 2
+		
+~5000000 x 250-300
+	AutoSplit 3
+	Energy Output
+	Particle Acceleration 4
+	_Splits 3
+	
+10e-3 x 1000-2000
+	_Unstabilities 5
+	_Powers 3
+	Split 4
+
+25e-3 x 1000-2000
+	Power 5
+	_Splits 4
+
+50e-3 x 2000-4000
+	AutoSplit 4
+	_AutoSplits 3
+
+100e-3 x 2000-4000
+	Energy Feedback
+	_Powers 4
+
+250e-3 x 4000-8000
+	Split 5
+	Particle Acceleration 5
+
+500e-3 x 5000-10000
+	_Splits 5
+	_AutoSplits 4
+	AutoSplit 5
+
+1000e-3 x 7000-10000
+	_Powers 5
+
+5000e-3 x 10000-15000
+	_AutoSplits 5

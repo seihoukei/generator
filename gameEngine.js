@@ -17,7 +17,7 @@ class Game {
 				})
 			}
 		}
-		
+				
 		if (!this.autoSaveSlot || !this.load(this.autoSaveSlot))
 			this.reset()
 	}
@@ -35,7 +35,8 @@ class Game {
 		
 		this.updatesPlanned = new Set()
 		this.activeData = new Set()
-		
+		this.unlocks = new Set()
+
 		let timerData = saveData && saveData.timers || {}
 		
 		this.timers = {
@@ -95,6 +96,10 @@ class Game {
 		this.update(true)		
 		this.gui.update(true)		
 		
+		if (saveData && saveData.unlocks)
+			for (let unlock of saveData.unlocks)
+				this.unlock(unlock)
+		
 		//Activate tab
 		this.gui.tabs.show(saveData && saveData.gameTab || "generator", false)
 
@@ -109,7 +114,7 @@ class Game {
 		let chambers = [...data.chambers]
 		
 		for (let chamber of chambers)
-			chamber.class = Chamber
+			chamber.class = GeneratorChamber
 		
 		
 		let baseData = [...data.resources, ...chambers]
@@ -147,7 +152,7 @@ class Game {
 		
 		let first, last
 		for (let resource of Object.values(result)) {
-			if (resource.class == Chamber) {
+			if (resource.class == GeneratorChamber) {
 				resource.data = {}
 				
 				for (let {name} of gameData.chamberResources)
@@ -193,7 +198,20 @@ class Game {
 			}
 		}
 		
+		for (let resource of Object.values(result)) {
+			if (resource.valueFunction) 
+				resource.value = resource.valueFunction(resource.dependencies)
+		}
+
 		return result
+	}
+	
+	resetData(prefix) {
+		for (let resource of Object.values(this.data)) {
+			if (resource.class.name.substr(0,prefix.length) == prefix) {
+				resource.reset()
+			}
+		}
 	}
 	
 	load (slot) {
@@ -225,6 +243,7 @@ class Game {
 				saveData.resources[resource.name] = data
 		}
 		
+		saveData.unlocks = [...this.unlocks]
 		saveData.version = this.version
 		saveData.gameTab = this.gui.tabs.activeTab?this.gui.tabs.activeTab.name:"generator"
 		
@@ -269,7 +288,7 @@ class Game {
 		this.boost = this.data.offlinium.value > 0 ? this.data.offliniumPower.value : 1
 		
 		if (this.data.offlinium.value > 0) {
-			this.data.offlinium.add(-time * 1e-3 * this.boost)
+			this.data.offlinium.add(-time * 1e-3 * (this.boost - 1))
 		}
 
 		for (let timer of Object.values(this.timers))
@@ -359,6 +378,23 @@ class Game {
 		
 		return true
 	}
+
+	unlock(name) {
+		if (this.unlocks.has(name))
+			return false
+		
+		console.log("unlocking", name)
+		
+		switch (name) {
+			case "plan" : 
+				for (let button of this.gui.dialogs.tabs.get("plan").displayButtons)
+					button.reveal()
+				break
+		}
+		
+		this.unlocks.add(name)
+		return true
+	}	
 }
 
 class Generator {
@@ -368,7 +404,7 @@ class Generator {
 		this.chambers = new Set()
 		
 		for (let resource of Object.values(this.game.data)) {
-			if (resource.class == Chamber) {
+			if (resource.class == GeneratorChamber) {
 				resource.data = {}
 				this.chambers.add(resource)
 				resource.generator = this
@@ -391,12 +427,14 @@ class Generator {
 		let particle = new Particle(...data, this.extraData)
 		
 		if (!particle.mass) 
-			return
+			return false
 		
 		this.particles.add(particle)
 		
 		if (this.visible)
 			this.tab.animateParticle(particle)
+		
+		return true
 	}
 	
 	advance (time = this.game.frameTime) {
@@ -406,10 +444,11 @@ class Generator {
 			this.game.timers.emit.value -= 10
 			
 			for (let chamber of this.chambers) {
-				if (Math.random() > chamber.data.stability.value)
-					chamber.shootParticle({
+				if (Math.random() > chamber.data.stability.value) {
+					if (chamber.shootParticle({
 						mass : chamber.data.autoSplitCost.value
-					})
+					})) this.game.data.autoSplits.add(1)
+				}
 				if (Math.random() < chamber.data.photonChance.value)
 					chamber.shootPhoton()
 			}
@@ -426,6 +465,12 @@ class Generator {
 		for (let particle of this.particles)
 			particle.advance(time, this.visible)
 	}
+	
+	reset() {
+		this.game.resetData("Generator")
+		this.game.save("resetSave")
+		this.game.load("resetSave")
+	}
 }
 
 class Particle {
@@ -435,7 +480,7 @@ class Particle {
 		this.position = 0
 		this.mass = 1
 		this.power = 1
-		this.points = 20
+		this.points = 30
 		Object.assign(this, ...data)
 		
 		if (this.speed) this.timeTotal /= this.speed
@@ -445,7 +490,7 @@ class Particle {
 			return
 		}
 		
-		this.size = softCap(this.mass ** 0.5 * 2.25, 10)
+		this.size = softCap(1.75 * this.mass ** 0.2, 4.5)
 
 		if (this.origin && this.target) {
 			this.path = this.createCurve({
@@ -475,7 +520,7 @@ class Particle {
 			this.target.shotParticles += this.mass
 		}
 
-		this.production = this.mass * this.power * 1e-9
+		this.production = this.mass * this.power * this.game.data.generatorBoost.value * 1e-9
 		this.segmentTime = this.timeTotal / this.points
 		
 		this.animationTime = this.timeTotal / this.game.boost
@@ -491,17 +536,17 @@ class Particle {
 		let speed1 = randomRange(data.minSpeed, data.maxSpeed)
 		let speed2 = randomRange(data.minSpeed, data.maxSpeed)
 		let points = [{
-			x : data.p1.x + Math.cos(angle1) * (data.p1.r - data.size),
-			y : data.p1.y + Math.sin(angle1) * (data.p1.r - data.size),
+			x : data.p1.x + Math.cos(angle1) * (data.p1.radius * 0.8 - data.size),
+			y : data.p1.y + Math.sin(angle1) * (data.p1.radius * 0.8 - data.size),
 		},{
-			x : data.p1.x + Math.cos(angle1) * (data.p1.r - data.size + speed1),
-			y : data.p1.y + Math.sin(angle1) * (data.p1.r - data.size + speed1),
+			x : data.p1.x + Math.cos(angle1) * (data.p1.radius * 0.8 - data.size + speed1),
+			y : data.p1.y + Math.sin(angle1) * (data.p1.radius * 0.8 - data.size + speed1),
 		},{
-			x : data.p2.x + Math.cos(angle2) * (data.p2.r - data.size + speed2),
-			y : data.p2.y + Math.sin(angle2) * (data.p2.r - data.size + speed2),
+			x : data.p2.x + Math.cos(angle2) * (data.p2.radius * 0.8 - data.size + speed2),
+			y : data.p2.y + Math.sin(angle2) * (data.p2.radius * 0.8 - data.size + speed2),
 		},{
-			x : data.p2.x + Math.cos(angle2) * (data.p2.r - data.size),
-			y : data.p2.y + Math.sin(angle2) * (data.p2.r - data.size),
+			x : data.p2.x + Math.cos(angle2) * (data.p2.radius * 0.8 - data.size),
+			y : data.p2.y + Math.sin(angle2) * (data.p2.radius * 0.8 - data.size),
 		}]
 		
 		let lastPoint = points[0]
@@ -546,8 +591,8 @@ class Particle {
 			y : point.y + Math.sin(angle) * data.distance,
 		}
 		let somewhere = {
-			x : point.x + Math.cos(angle) * (point.r - data.size),
-			y : point.y + Math.sin(angle) * (point.r - data.size),
+			x : point.x + Math.cos(angle) * (point.radius - data.size),
+			y : point.y + Math.sin(angle) * (point.radius - data.size),
 		}
 
 		let start = data.p1 ? somewhere : nowhere
@@ -662,6 +707,12 @@ class GameObject {
 		this.savables.push({
 			name, value
 		})
+	}
+	
+	reset() {
+		for (let {name, value} of this.savables) {
+			this[name] = value
+		}
 	}
 	
 	getSaveData() {
@@ -803,7 +854,7 @@ class Chamber extends Resource {
 	}
 	
 	shootParticle (...data) {
-		this.game.generator.shootParticle({
+		return this.game.generator.shootParticle({
 			origin : this,
 			target : this.next,
 			mass : this.data.splitCost.value,
@@ -813,7 +864,7 @@ class Chamber extends Resource {
 	}
 	
 	shootPhoton (...data) {
-		this.game.generator.shootParticle({
+		return this.game.generator.shootParticle({
 			origin : this,
 			mass : Math.random(),
 			power : this.data.splitPower.value * 100,
@@ -845,7 +896,7 @@ class Chamber extends Resource {
 		let dy = this.y - lastY || 0
 		
 		if (this.game.data && produceEnergy) {
-			this.game.data.energy.add((dx ** 2 + dy ** 2) * this.value)
+			this.game.data.energy.add(Math.hypot(dx, dy) * this.value * this.game.data.generatorBoost.value)
 		}
 	}
 	
@@ -872,9 +923,9 @@ class Chamber extends Resource {
 		this.add(value - this.value)
 		
 		if (particle.mass >= 1 && Math.random() < this.data.chainChance.value) {
-			this.shootParticle({
-				mass : Math.random() * particle.mass
-			})
+			if (this.shootParticle({
+				mass : (0.5 + 0.5 * Math.random()) * particle.mass
+			})) this.data.autoSplits.add(1)
 		}
 	}
 }
@@ -914,7 +965,11 @@ class GameAction extends Resource {
 		super.add(x)
 		this.bought = this.max && (this.value >= this.max)
 		
-		this.calculateCosts()		
+		this.calculateCosts()	
+		
+		if (this.calculatedRequirements && this.calculatedRequirements.generatorLevel > this.game.data.generatorLevel.value)
+			this.bought = true
+		
 	}
 	
 	update() {
@@ -971,7 +1026,7 @@ class GameAction extends Resource {
 			this.activate(this.timeLeft)
 		}
 
-		this.bought = this.max && (this.value >= this.max)
+		this.bought = (this.max && this.value >= this.max) || (this.calculatedRequirements && this.calculatedRequirements.generatorLevel > this.game.data.generatorLevel.value)
 	}
 }
 
@@ -984,14 +1039,6 @@ class Achievement extends GameAction {
 		}
 	}
 }
-
-class GlobalUpgrade extends GameAction {}
-
-class GeneratorUpgrade extends GameAction {}
-
-class GeneratorInteraction extends GameAction {}
-
-class GeneratorInfluence extends GameAction {}
 
 class Timer {
 	constructor (...data) {
@@ -1007,3 +1054,14 @@ class Timer {
 		this.value = 0
 	}
 }
+
+class GlobalStat extends Stat {}
+class GlobalResource extends Resource {}
+class GlobalUpgrade extends GameAction {}
+
+class GeneratorChamber extends Chamber {}
+class GeneratorStat extends Stat {}
+class GeneratorResource extends Resource {}
+class GeneratorUpgrade extends GameAction {}
+class GeneratorInteraction extends GameAction {}
+class GeneratorInfluence extends GameAction {}

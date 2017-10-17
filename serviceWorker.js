@@ -1,10 +1,11 @@
 "use strict"
 
-const cacheName = "generatorIdle"
+const cacheName = "generatorIdle_v3"
 
 const cacheToNetwork = [
 	'https://fonts.googleapis.com/css?family=Open+Sans:300,400',
-	'favicon.ico'
+	'favicon.ico',
+	'icon.png'
 ]
 
 const networkToCache = [
@@ -18,6 +19,7 @@ const networkToCache = [
 				'gameWorker.js',
 				'resourceData.js',
 				
+				'manifest.json',
 				'game.css',
 ]
 

@@ -89,12 +89,21 @@ let gameData
 		// Global stats
 			class : GlobalStat,
 			name : "offliniumPower",
-			displayName : "Offlinium boost",
+			displayName : "Offlinium speed boost",
 			displayString : x => `×${x}`,
 			displayRequirement : moreThan(2),
 			dependencies : ["offliniumLevel", "offlinium"],
-			valueFunction : x => 2 ** (x.offliniumLevel.value + 1),
+			valueFunction : x => x.offlinium.value ? 2 ** (x.offliniumLevel.value + 1) : 1,
 			value : 2
+		},{
+			class : GlobalStat,
+			name : "offliniumRate",
+			displayName : "Offlinium production rate",
+			displayString : x => `${normal(3)(x)}/s`,
+			displayRequirement : moreThan(0),
+			dependencies : ["offliniumLevel", "offlinium"],
+			valueFunction : x => 2 ** (x.offliniumLevel.value - 3),
+			value : 0.125
 		},{
 		
 
@@ -147,13 +156,23 @@ let gameData
 			}
 		},{
 			class : GeneratorStat,
-			name : "generatorBoost",
+			name : "feedbackBoost",
 			displayName : "Feedback boost",
 			displayString : x => `×${normal(2)(x)}`,
 			displayRequirement : moreThan(1),
-			dependencies : ["energyFeedback"],
+			dependencies : ["energyFeedback","induction","hyperinduction"],
 			valueFunction : (x) => {
-				return 1 + 0.05 * x.energyFeedback.value
+				return (1 + x.energyFeedback.value * (0.05 + 0.01 * (x.hyperinduction.value + 1) * x.induction.value))
+			}
+		},{
+			class : GeneratorStat,
+			name : "generatorBoost",
+			displayName : "Production boost",
+			displayString : x => `×${normal(2)(x)}`,
+			displayRequirement : moreThan(1),
+			dependencies : ["feedbackBoost", "generatorLevel"],
+			valueFunction : (x) => {
+				return (x.feedbackBoost.value * 10 ** (0.5 * x.generatorLevel.value))
 			}
 		},{
 
@@ -163,11 +182,26 @@ let gameData
 			displayName : "Offlinium level",
 			displayHint : "Each level doubles effect of offlinium",
 			displayRequirements : {
-				offlinium : 3600
+				offlinium : 1000
 			},
 			cost : {
 				offlinium : {
-					baseValue : 3600,
+					baseValue : 1000,
+					multiplier : 2
+				}
+			},
+			max : 4
+		},{
+			class : GlobalUpgrade,
+			name : "offliniumProduction",
+			displayName : "Offlinium production",
+			displayHint : "Each level doubles offlinium gained per second offline",
+			displayRequirements : {
+				offlinium : 500
+			},
+			cost : {
+				offlinium : {
+					baseValue : 500,
 					multiplier : 2
 				}
 			},
@@ -177,6 +211,8 @@ let gameData
 			name : "generatorLevel",
 			displayName : "Generator level",
 			displayHint : "Replaces generator with a new, more flexible and productive one. YOU WILL LOSE ALL YOUR GENERATOR PROGRESS. GENERATOR OUTPUT WILL BE RESET TO ZERO.",
+			displayRequirement : moreThan(0),
+			displayString : x => normal(0)(x+1),
 			displayRequirements : {
 				generatorOutput : 1e-6,
 			},
@@ -204,14 +240,15 @@ let gameData
 					displayString : percent(1)
 				}
 			},
-			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
-				red :   [10, 10, 17, 35, 50, 0],
-				green : [10, 10, 17, 35, 50, 0],
-				blue :  [10, 10, 17, 35, 50, 0],
+			requirements : {//    1      2       3        4      5        6       7      8
+				generatorLevel : [0,     0,      0,       0,     0,       1,      0,     2, 0, 3],
+				red :   		 [10,    10,     17,      35,    50,      20000,  50000, 0],
+				green : 		 [10,    10,     17,      35,    50,      20000,  50000, 0],
+				blue :  		 [10,    10,     17,      35,    50,      20000,  50000, 0],
 			},
 			cost : {
-				energy : [50e-9, 200e-9, 2000e-9, 50e-6, 1100e-6, 0]
+				energy :         [50e-9, 200e-9, 2000e-9, 50e-6, 1100e-6, 30e3,   3e6,   0],
+				light :          [0,     0,      0,       0,     0,       500e-9, 5e-6,  0]
 			},
 			max : 9
 		},{
@@ -236,14 +273,14 @@ let gameData
 				}
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				red :   [20, 0, 0, 0, 0, 0],
 				green : [0, 5, 25, 50, 250, 0],
 				blue :  [0, 5, 25, 50, 250, 0],
 			},
 			cost : {
 				red : [0, 5, 25, 50, 250, 0],
-				energy : [50e-9, 750e-9, 50e-6, 1000e-6, 10e-3, 0]
+				energy : [50e-9, 750e-9, 50e-6, 1000e-6, 10e-3, 100e3, 2e6, 0]
 			},
 			target : "red",
 			max : 9
@@ -269,7 +306,7 @@ let gameData
 				}
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				red :   [0, 5, 25, 60, 300, 0],
 				green : [20, 0, 0, 0, 0, 0],
 				blue :  [0, 5, 25, 60, 300, 0],
@@ -302,7 +339,7 @@ let gameData
 				}
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				red :   [0, 5, 25, 55, 280, 0],
 				green : [0, 5, 25, 55, 280, 0],
 				blue :  [20, 0, 0, 0, 0, 0],
@@ -322,14 +359,15 @@ let gameData
 				energy : 50e-9
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
-				totalMass : [0, 40, 125, 400, 4000, 0],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
+				totalMass : [0, 40, 125, 400, 4000, 25000, 0],
 			},
 			cost : {
-				energy : [75e-9, 1500e-9, 250e-6, 6e-3, 300e-3, 0],
-				red :   [0, 5, 40, 140, 1500, 0],
-				green : [0, 5, 30, 120, 1200, 0],
-				blue :  [0, 5, 20, 100, 1000, 0],
+				energy : [75e-9, 1500e-9, 250e-6, 6e-3, 300e-3, 3e3, 0],
+				red :   [0, 5, 40, 140, 1500, 7000, 0],
+				green : [0, 5, 30, 120, 1200, 6000, 0],
+				blue :  [0, 5, 20, 100, 1000, 5000, 0],
+				light : [0, 0, 0,  0,   0,    200e-9, 0]
 			},
 			info : {
 				currentBonus : {
@@ -353,14 +391,15 @@ let gameData
 				energy : 100e-9
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
-				totalMass : [0, 60, 120, 180, 0]
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
+				totalMass : [0, 60, 120, 180, 1000, 25000, 0]
 			},
 			cost : {
-				energy : [250e-9, 2500e-9, 75e-6, 2250e-6, 25e-3, 0],
-				red :   [5, 15, 30, 50, 250, 0],
-				green : [5, 15, 30, 50, 250, 0],
-				blue :  [5, 15, 30, 50, 250, 0]
+				energy : [250e-9, 2500e-9, 75e-6, 2250e-6, 25e-3, 1e3, 0],
+				red :   [5, 15, 30, 50, 250, 5000, 0],
+				green : [5, 15, 30, 50, 250, 5000, 0],
+				blue :  [5, 15, 30, 50, 250, 5000, 0],
+				light : [0, 0,  0,  0,  0,   100e-9, 0]
 			}
 		},{
 			class : GeneratorUpgrade,
@@ -371,7 +410,7 @@ let gameData
 				allPower : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				red :  [30, 50, 70, 500, 1500, 0]
 			},
 			cost : {
@@ -388,7 +427,7 @@ let gameData
 				allPower : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				green :  [25, 45, 65, 450, 1350, 0]
 			},
 			cost : { 
@@ -405,7 +444,7 @@ let gameData
 				allPower : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				blue :  [20, 40, 60, 400, 1200, 0]
 			},
 			cost : {
@@ -422,7 +461,7 @@ let gameData
 				autoSplits : 2500
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				totalMass : [75, 125, 250, 2500, 7500, 0],
 			}, 
 			cost : {
@@ -437,7 +476,7 @@ let gameData
 				allAutoSplit : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				red : [100, 200, 700, 1600, 4000, 0],
 				totalMass : [200, 400, 2000, 5000, 10000, 0],
 			}, 
@@ -453,7 +492,7 @@ let gameData
 				allAutoSplit : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				green : [150, 250, 1000, 2500, 7000, 0],
 				totalMass : [250, 450, 3000, 8000, 15000, 0],
 			}, 
@@ -469,7 +508,7 @@ let gameData
 				allAutoSplit : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				blue : [125, 225, 850, 2000, 5000, 0],
 				totalMass : [225, 425, 1500, 6500, 12500, 0],
 			}, 
@@ -485,7 +524,7 @@ let gameData
 				splits : 100,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				totalMass : [0, 50, 200, 1000, 4000, 0]
 			},
 			cost : {
@@ -500,7 +539,7 @@ let gameData
 				allSplit : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				totalMass : [50, 200, 500, 1000, 5000, 0]
 			},
 			cost : {
@@ -515,7 +554,7 @@ let gameData
 				allSplit : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				totalMass : [50, 200, 500, 1000, 5000, 0]
 			},
 			cost : {
@@ -530,7 +569,7 @@ let gameData
 				allSplit : 2,
 			},
 			requirements : {
-				generatorLevel : [0, 0, 0, 0, 0, 2, 0, 3, 0, 4],
+				generatorLevel : [0, 0, 0, 0, 0, 1, 0, 2, 0, 3],
 				totalMass : [50, 200, 500, 1000, 5000, 0]
 			},
 			cost : {
@@ -544,6 +583,9 @@ let gameData
 			displayRequirements : {
 				energy : 1e-3
 			},
+			requirements : {
+				totalMass : 400,
+			},
 			cost : {
 				energy : 5e-3,
 				red : 100,
@@ -554,20 +596,6 @@ let gameData
 				game.unlock("plan")
 			},
 			max : 1
-		},{
-			class : GeneratorUpgrade,
-			name : "energyFeedback",
-			displayName : "Energy feedback",
-			displayHint : "Improves overall energy production by 5% per level",
-			displayRequirements : {
-				energyOutput : 1
-			},
-			cost : {
-				energy : {
-					base : 100e-3,
-					multiplier : 1.5
-				}
-			}
 		},{
 			class : GeneratorUpgrade,
 			name : "allChain",		
@@ -583,34 +611,209 @@ let gameData
 		},{
 			class : GeneratorUpgrade,
 			name : "allLight",		
+			displayName : "Photon emission",
+			displayHint : "Cores eventually emit photons",
+			displayRequirements : {
+				light : 1e-9
+			},
+			cost : {
+				light : [100e-9, 10e-6, 10e-3, 10, 10e3],
+				energy : [10e3, 10e3, 10e6, 10e9, 10e12]
+			},
+			max : 5
 		},{
 			class : GeneratorUpgrade,
 			name : "coreMovement",
 			max : 5
 		},{
 			class : GeneratorUpgrade,
+			name : "energyFeedback",
+			displayName : "Energy feedback",
+			displayHint : "Improves overall energy production",
+			displayRequirements : {
+				energyOutput : 1
+			},
+			dependencies : ["induction", "hyperinduction"],
+			info : {
+				singleBonus : {
+					displayName : "Bonus per level",
+					displayString : percent(0),
+					valueFunction : x => 0.05 + 0.01 * (x.hyperinduction.value + 1) * x.induction.value
+				},
+				totalBonus : {
+					displayName : "Active bonus",
+					displayString : percent(0),
+					valueFunction : x => x.self.value * (0.05 + 0.01 * (x.hyperinduction.value + 1) * x.induction.value)
+				}
+			},
+			cost : {
+				energy : {
+					base : 100e-3,
+					multiplier : 1.5
+				}
+			}
+		},{
+			class : GeneratorUpgrade,
+			name : "induction",
+			displayName : "Induction",
+			displayHint : "Increases energy feedback effect",
+			displayRequirements : {
+				generatorLevel : 2,
+				energyFeedback : 20,
+			},
+			cost : {
+				energy : {
+					base : 100,
+					multiplier : 1.5
+				}, 
+				light : {
+					base : 1e-3,
+					multiplier : 1.5
+				}
+			}
+		},{
+			class : GeneratorUpgrade,
+			name : "hyperinduction",
+			displayName : "Hyperinduction",
+			displayHint : "Increases induction effect",
+			displayRequirements : {
+				generatorLevel : 4,
+				induction : 10,
+			},
+			cost : {
+				energy : {
+					base : 100e3,
+					multiplier : 1.5
+				}, 
+				light : {
+					base : 1,
+					multiplier : 1.5
+				}
+			}
+		},{
+			class : GeneratorUpgrade,
 			name : "basicInteractions",		
+			displayName : "Basic interactions",
+			displayHint : "Discover the ways to interact with generator cores",
+			displayRequirements : {
+				generatorLevel : 1,
+				allAutoSplit : 2,
+			},
+			requirements :{
+				particleAcceleration : 3,
+				allPower : 3,
+				allUnstability : 5,
+				totalMass : 1500,
+			},
+			cost: {
+				red : 400,
+				green : 400,
+				blue : 400,
+				energy : 10e-3
+			},
+			max : 1
 		},{
 			class : GeneratorUpgrade,
 			name : "basicInfluences",		
+			displayName : "Basic influences",
+			displayHint : "Discover the ways to continuously affect generator cores",
 		},{
 			class : GeneratorUpgrade,
 			name : "advancedInteractions",		
+			displayName : "Advanced interactions",
+			displayHint : "Discover even more ways to interact with generator cores",
 		},{
 			class : GeneratorUpgrade,
 			name : "advancedInfluences",		
+			displayName : "Advanced influences",
+			displayHint : "Discover more ways to continuously affect generator cores",
 		},{
+			
+		//Generator interactions
 			class : GeneratorInteraction,
 			name : "basicRed1",
-		},{
-			class : GeneratorInteraction,
-			name : "basicBlue1",
+			displayName : "Redium explosion",
+			displayHint : "Force red core to emit stronger particles",
+			duration : 10000,
+			displayRequirements: {
+				basicInteractions : 1
+			},
+			requirements : {
+				redAutoSplit : [1, 0],
+			},
+			action : () => {
+				let red = game.data.red.value
+				game.data.red.spreadPhotons(red ** 0.5, 100)
+				game.data.red.set(Math.min(red ** 0.5, red - red ** 0.5))
+			},
+			target : "red"
 		},{
 			class : GeneratorInteraction,
 			name : "basicGreen1",
+			displayName : "Greenium absorption",
+			displayHint : "Force green core to absorb full mass of other cores",
+			duration : 20000,
+			displayRequirements: {
+				basicInteractions : 1
+			},
+			requirements : {
+				greenAutoSplit : [1, 0],
+			},
+			action : () => {
+				game.data.red.spreadParticles(game.data.red.value, 10, {
+					target : game.data.green
+				})
+				game.data.blue.spreadParticles(game.data.blue.value, 10, {
+					target : game.data.green
+				})
+			},
+			target : "green"
+		},{
+			class : GeneratorInteraction,
+			name : "basicBlue1",
+			displayName : "Bluite equalization",
+			displayHint : "Try to equalize core masses using blue core as a medium",
+			duration : 10000,
+			displayRequirements: {
+				basicInteractions : 1
+			},
+			requirements : {
+				blueAutoSplit : [1, 0],
+			},
+			action : () => {
+				let middle = (game.data.red.value + game.data.green.value + game.data.blue.value) / 3
+				
+				let redFix = Math.min (game.data.blue.value, Math.max (0, middle - game.data.red.value))
+				let greenFix = Math.min (game.data.green.value, Math.max (0, game.data.green.value - middle))
+				
+				if (redFix)
+					game.data.blue.spreadParticles(redFix, 10)
+
+				if (greenFix)
+					game.data.green.spreadParticles(greenFix, 10)
+			},
+			target : "blue"
 		},{
 			class : GeneratorInteraction,
 			name : "basicAll1",
+			displayName : "Mass emission",
+			displayHint : "Force all the cores to emit full mass",
+			duration : 5000,
+			displayRequirements : {
+				basicRed1 : 1,
+				basicGreen1 : 1,
+				basicBlue1 : 1,
+			},
+			requirements : {
+				basicRed1 : [5, 0],
+				basicGreen1 : [5, 0],
+				basicBlue1 : [5, 0],
+			},
+			action : () => {
+				game.data.red.spreadParticles(game.data.red.value, 10)								
+				game.data.green.spreadParticles(game.data.green.value, 10)								
+				game.data.blue.spreadParticles(game.data.blue.value, 10)								
+			}
 		},{			
 			class : GeneratorInteraction,
 			name : "advancedRed1",
@@ -691,12 +894,13 @@ let gameData
 			displayString : normal(2),
 			displayRequirement : moreThan(1),
 			subClass : "bottom",
-			dependencies : ["allPower","_Power"],
+			dependencies : ["allPower","_Power","generatorLevel"],
 			valueFunction : x => {
 				let result = 1
 				
 				result *= 1.7 ** (x.allPower.value)
 				result *= 3 ** (x._Power.value)
+				result *= 2 ** (x.generatorLevel.value)
 				
 				return result
 			}
@@ -809,6 +1013,12 @@ let gameData
 						name: "plan",
 						displayName : "Plan"
 					}, {
+						name: "about",
+						displayName : "Generator Idle"
+					}, {
+						name: "achievements",
+						displayName : "Achievements"
+					}, {
 						name: "import",
 						class: ImportDialog,
 						displayName : "Import / export game"
@@ -865,6 +1075,20 @@ let gameData
 				class : Menu,
 				data : {
 					items: [
+					
+						new MenuItem({
+							displayName : "About game",
+							action : () => {
+								game.gui.dialogs.show("about")
+							}
+						}), 
+					
+						new MenuItem({
+							displayName : "Achievemetns",
+							action : () => {
+								game.gui.dialogs.show("achievements")
+							}
+						}), 
 					
 						new MenuItem({
 							displayName : "Import / export game",
@@ -958,13 +1182,13 @@ let gameData
 			displayName : "Upper bound for full numbers",
 			default : 1000,
 			choices : [{
-				value : 1
+				value : 10
 			},{
 				value : 1000
 			},{
 				value : 1000000
 			},{
-				value : 1000000000
+				value : 10000000
 			}]
 		}, {
 			name : "numberMin",
@@ -1002,7 +1226,7 @@ let gameData
 			name : "maxParticles",
 			group : "Animations",
 			displayName : "Maximum number of particles on screen",
-			default : 50,
+			default : 150,
 			choices : [{
 				text : "None",
 				value : 0
@@ -1010,6 +1234,8 @@ let gameData
 				value : 10
 			},{
 				value : 50
+			},{
+				value : 150
 			},{
 				value : 250
 			}],
@@ -1069,7 +1295,7 @@ let gameData
 			displayName : "Display refresh speed (target UI FPS)",
 			default : 20,
 			choices : [{
-				value : 1
+				value : 5
 			},{
 				value : 10
 			},{

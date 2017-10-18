@@ -601,6 +601,10 @@ html,body {
 	background-color : rgba(255,255,0,0.6);
 }
 
+.generatorInteractions .store .display .progress {
+	background-color : rgba(127,127,127,0.6);
+}
+
 .store .display .name, .store .display .value {
 	display : block;
 	padding : 1.05vmin;
@@ -620,6 +624,11 @@ html,body {
 .store .display .value:empty {
 	display : none;
 }
+
+.store .display .value.hidden {
+	display : none;
+}
+
 .store .display:hover {
 	background-color : rgba(0,0,0,0.8);
 }

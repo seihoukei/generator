@@ -545,10 +545,7 @@ class ResourceDisplay {
 		this.initDisplay()
 					
 		this.dvDisplay = createElement("div", {class : `${this.className?this.className:"display"} ${this.resource.name} ${this.resource.seen?"":this.forced?"unknown":"hidden"}`})
-		if (this.resource.duration) {
-			this.dvDisplay.appendChild(this.dvProgress = createElement("div",{class : `progress`}))
-		}
-		if (!this.noName && this.resource.displayName)
+		if (!this.noName && this.displayName)
 			this.dvDisplay.appendChild(this.dvName = createElement("div", {class : "name"}, this.resource.seen?this.displayName:this.forced?"unknown":this.displayName))
 		this.dvDisplay.appendChild(this.dvValue = createElement("div", {class : "value"}, this.resource.seen?this.displayString(this.resource.value):""))
 
@@ -593,9 +590,10 @@ class ResourceDisplay {
 		this.seen = this.resource.seen
 		
 		if (this.progressAnimation && this.resource.duration) {
-			if (this.resource.timeLeft)
+			if (this.resource.timeLeft) {
+				this.progressAnimation.playbackRate = this.game.boost
 				this.progressAnimation.currentTime = this.resource.duration - this.resource.timeLeft
-			else {
+			} else {
 				this.progressAnimation.cancel()
 				delete this.progressAnimation
 			}
@@ -636,23 +634,16 @@ class ResourceDisplay {
 		
 		this.resource.removeDisplay(this)
 	}
-	
-	animateProgress() {
-		if (!this.resource.duration || !this.dvProgress) 
-			return
-		
-		this.progressAnimation = this.dvProgress.animate([{
-			width : "100%"
-		},{
-			width : "0%"
-		}], this.resource.duration)
-		this.progressAnimation.currentTime = this.resource.duration - this.resource.timeLeft
-	}
 }
 
 class StoreDisplay extends ResourceDisplay {
 	constructor(...data) {
 		super(...data)
+
+		if (this.resource.duration) {
+			this.dvDisplay.insertBefore(this.dvProgress = createElement("div",{class : `progress`}), this.dvDisplay.firstChild)
+		}
+
 		if (this.resource.max == 1)
 			this.dvValue.classList.add("hidden")
 		
@@ -756,6 +747,22 @@ class StoreDisplay extends ResourceDisplay {
 
 		if (this.store)
 			this.store.animateBuy(this, this.resource.bought)
+	}
+
+	
+	animateProgress() {
+		if (!this.resource.duration || !this.dvProgress) 
+			return
+		
+		this.progressAnimation = this.dvProgress.animate([{
+			width : "100%"
+		},{
+			width : "0%"
+		}], this.resource.duration)
+		
+		if (this.game)
+			this.progressAnimation.playbackRate = this.game.boost
+		this.progressAnimation.currentTime = this.resource.duration - this.resource.timeLeft
 	}
 }
 
@@ -954,6 +961,7 @@ class MultiDisplay {
 			
 			let display = new (data.displayClass || ResourceDisplay) ({
 				container : this.dvDisplay,
+				game : this.game,
 				resource : resource,
 				showAnimation : this.elementShowAnimation,
 				showChange : this.showChange,
@@ -1037,8 +1045,7 @@ class BuyDialog extends Dialog {
 			if (resource.class == this.buyClass) {
 				if (resource.seen)
 					this.seen = true
-				
-				
+								
 				let display = new StoreDisplay({
 					container : resource.bought?this.dvBought:this.dvStore,
 					store : this,
@@ -1149,25 +1156,21 @@ class BuyDialog extends Dialog {
 		element.dvDisplay.animate([{
 			transform: startTransform,
 			backgroundColor: startColor,
-			pointerEvents : "none",
 			color: "white",
 			zIndex : 25,
 		},{
 			transform: tempTransform,
 			backgroundColor: tempColor,
-			pointerEvents : "none",
 			color: "black",
 			zIndex : 25,
 		},{
 			transform: tempTransform,
 			backgroundColor: endColor,
-			pointerEvents : "none",
 			color: "white",
 			zIndex : 25,
 		},{
 			transform:`translate(0,0) scale(1,1)`,
 			backgroundColor:endColor,
-			pointerEvents : "none",
 			color : "white",
 			zIndex : 25,			
 		}], 1000)
@@ -1431,7 +1434,7 @@ class GeneratorTab extends Tab {
 			right : new MultiDisplay({
 				container : this.dvDisplay,
 				className : "resources right",
-				resourceList : ["generatorLevel","offliniumPower","generatorBoost","generatorOutput","particleSpeed","totalMass","totalSplits"],
+				resourceList : ["generatorLevel","generatorBoost","offliniumPower","generatorOutput","particleSpeed","totalMass","totalSplits"],
 				game : this.game,
 				showAnimation, elementShowAnimation
 			})

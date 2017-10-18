@@ -90,12 +90,12 @@ class Game {
 			this.updatesPlanned.add(resource)
 		}
 			
-		if (saveData && saveData.time)
-			this.data.offlinium.add(Math.max(0, (Date.now() - saveData.time) * 1e-3 - 60))
-
 		this.update(true)		
 		this.gui.update(true)		
 		
+		if (saveData && saveData.time)
+			this.data.offlinium.add(Math.max(0, ((Date.now() - saveData.time) * 1e-3 - 60) * this.data.offliniumRate.value))
+
 		if (saveData && saveData.unlocks)
 			for (let unlock of saveData.unlocks)
 				this.unlock(unlock)
@@ -475,13 +475,19 @@ class Generator {
 
 class Particle {
 	constructor (...data) {
-		this.timeTotal = 2000
+		this.timeTotal = 1750
+		this.timeRandom = 500
 		this.time = 0
 		this.position = 0
+		this.productionBoost = 1
 		this.mass = 1
 		this.power = 1
 		this.points = 30
 		Object.assign(this, ...data)
+		
+		if (this.timeRandom)
+			this.timeTotal += this.timeRandom * Math.random()
+		
 		
 		if (this.speed) this.timeTotal /= this.speed
 		
@@ -489,7 +495,7 @@ class Particle {
 			this.mass = 0
 			return
 		}
-		
+				
 		this.size = softCap(1.75 * this.mass ** 0.2, 4.5)
 
 		if (this.origin && this.target) {
@@ -520,7 +526,10 @@ class Particle {
 			this.target.shotParticles += this.mass
 		}
 
-		this.production = this.mass * this.power * this.game.data.generatorBoost.value * 1e-9
+		let slowdown = Math.log(Math.E + this.mass)
+		this.timeTotal *= slowdown
+
+		this.production = this.mass * this.power * this.productionBoost * this.game.data.generatorBoost.value * slowdown * 1e-9
 		this.segmentTime = this.timeTotal / this.points
 		
 		this.animationTime = this.timeTotal / this.game.boost
@@ -671,7 +680,7 @@ class Particle {
 	produceOutput(distance, time) {
 		this.game.data.energy.add(this.production * distance ** 2 / time)
 		if (this.origin && !this.target) {
-			this.game.data.light.add(this.production * distance * 1e-3)
+			this.game.data.light.add(this.production * distance ** 2 / time * 1e-9)
 		}
 	}
 }
@@ -838,9 +847,16 @@ class Chamber extends Resource {
 	}
 	
 	spreadParticles(mass, amount = 10, data) {
+		let sum = 0
+		let spread = Array(amount).fill(0).map(x => {
+			x = Math.random()
+			sum += x
+			return x
+		})
+		
 		for (let i = 0; i < amount; i++) {
 			this.shootParticle({
-				mass : mass / amount
+				mass : mass * spread[i] / sum
 			}, data)
 		}
 	}
@@ -868,7 +884,7 @@ class Chamber extends Resource {
 			origin : this,
 			mass : Math.random(),
 			power : this.data.splitPower.value * 100,
-			speed : this.game.data.particleSpeed.value,
+			speed : this.game.data.particleSpeed.value * 2,
 		}, ...data)
 	}
 	

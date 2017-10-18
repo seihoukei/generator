@@ -28,9 +28,13 @@ Level 1 :
 	Basic Interactions
 	Photons`n`Light
 	
+	Early Output ~15J/S
+	
+	
 Level 2 :
 	Chaining
 	Basic Influences
+	Induction
 	
 Level 3 :
 	Advanced Interactions
@@ -40,7 +44,7 @@ Level 4 :
 	Mobile cores
 	
 	
-Level 0:
+Level 0 (displayed 1):
 ~50-100 x 30
 	Unstability 2
 	Particle Acceleration 1
@@ -121,3 +125,43 @@ Level 0:
 
 5000e-3 x 10000-15000
 	_AutoSplits 5
+
+	
+
+Level 1 (displayed 2):
+e10000-50000 l10-500e-9 x 25-75k
+	Power 6
+	Particle Acceleration 6
+	Unstability 6
+	
+	Photon Emission 1
+	
+e50k-100k l500-750 x 100-200k
+	_Powers 6
+	Split 6
+
+e100k-250k
+	_Unstabilities 6
+	_Splits 6
+	AutoSplit 6
+
+e250k-500k
+	_AutoSplits 6
+	Particle Acceleration 7
+
+e500k-1m
+	Power 7
+	Split 7
+
+e1m-2m
+	Photon Emission 2
+	Unstability 7
+	_Splits 7
+
+e2m-5m
+	_Unstabilities 7
+	_Powers 7
+	Autosplits 7
+
+e10m
+	_Autosplits 7

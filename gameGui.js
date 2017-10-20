@@ -1314,14 +1314,8 @@ class ParticleSystem {
 		for (let i = 0; i < x; i++) {
 			let particle = {
 				dvDisplay : createElement("div", {class : "particle"}),
-				animations : []
 			}
 			particle.endAnimation = (event) => {
-				let animation
-				
-/*				while (animation = particle.animations.pop()) {
-					animation.cancel()
-				}*/
 				
 				if (this.particles.length + this.shot < this.count)
 					this.particles.push(particle)
